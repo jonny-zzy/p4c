@@ -22,6 +22,7 @@ limitations under the License.
 #include "ebpfControl.h"
 #include "ebpfParser.h"
 #include "ebpfTable.h"
+#include "ebpfDeparser.h"
 #include "frontends/p4/coreLibrary.h"
 #include "frontends/common/options.h"
 
@@ -52,6 +53,15 @@ bool EBPFProgram::build() {
     BUG_CHECK(cb != nullptr, "No control block found");
     control = new EBPFControl(this, cb, parser->headers);
     success = control->build();
+    if (!success)
+        return success;
+
+
+    auto dpb = pack->getParameterValue(model.filter.deparser.name)
+                      ->to<IR::ControlBlock>();
+    BUG_CHECK(dpb != nullptr, "No deparser block found");
+    deparser = new EBPFDeparser(this, dpb, parser->headers);
+    success = deparser->build();
     if (!success)
         return success;
 
@@ -96,6 +106,8 @@ void EBPFProgram::emitC(CodeBuilder* builder, cstring header) {
 
     parser->emit(builder);
     emitPipeline(builder);
+
+    deparser->emit(builder);
 
     builder->emitIndent();
     builder->appendFormat("%s:\n", endLabel.c_str());
