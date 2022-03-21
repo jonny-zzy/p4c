@@ -528,7 +528,7 @@ bool EBPFControl::build() {
     codeGen = new ControlBodyTranslator(this);
     codeGen->substitute(headers, parserHeaders);
 
-    scanConstants();
+scanConstants();
     return ::errorCount() == 0;
 }
 

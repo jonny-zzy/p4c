@@ -65,8 +65,9 @@ extern hash_table {
 
 parser parse<H>(packet_in packet, out H headers);
 control filter<H>(inout H headers, out bool accept);
+control deparse<H>(in H headers, packet_out packet);
 
 package ebpfFilter<H>(parse<H> prs,
-                      filter<H> filt);
-
+                      filter<H> filt,
+                      deparse<H> dprs);
 #endif

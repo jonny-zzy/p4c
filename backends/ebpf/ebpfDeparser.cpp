@@ -153,7 +153,7 @@ void DeparserHdrEmitTranslator::processMethod(const P4::ExternMethod *method) {
                             "Only headers with fixed widths supported %1%", f);
                     return;
                 }
-                emitField(builder, f->name, expr, alignment, etype);
+                this->ControlBodyTranslator::compileEmitField(expr, f->name, alignment, etype);
                 alignment += et->widthInBits();
                 alignment %= 8;
             }
@@ -330,6 +330,22 @@ void EBPFDeparser::emitBufferAdjusts(CodeBuilder *builder) const {
     builder->blockEnd(true);
 }
 
+bool EBPFDeparser::build() {
+    hitVariable = program->refMap->newName("hit");
+    auto pl = controlBlock->container->type->applyParams;
+    if (pl->size() != 2) {
+        ::error(ErrorType::ERR_EXPECTED, "Expected deparser block to have exactly 3 parameters");
+        return false;
+    }
+
+    auto it = pl->parameters.begin();
+    headers = *it;
+    ++it;
+    packet_out = *it;
+
+    return this->EBPFControl::build();
+}
+
 void EBPFDeparser::emit(CodeBuilder* builder) {
     codeGen->setBuilder(builder);
 
@@ -349,8 +365,8 @@ void EBPFDeparser::emit(CodeBuilder* builder) {
     prepareBufferTranslator->setBuilder(builder);
     prepareBufferTranslator->copyPointerVariables(codeGen);
     prepareBufferTranslator->substitute(this->headers, this->parserHeaders);
-    controlBlock->container->body->apply(*prepareBufferTranslator);
-
+    controlBlock->container->body->apply(*prepareBufferTranslator); 
+ 
     emitBufferAdjusts(builder);
 
     builder->emitIndent();

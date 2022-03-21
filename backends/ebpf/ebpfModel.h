@@ -43,9 +43,10 @@ struct CounterArray_Model : public ::Model::Extern_Model {
 
 struct Filter_Model : public ::Model::Elem {
     Filter_Model() : Elem("ebpf_filter"),
-                     parser("prs"), filter("filt") {}
+                     parser("prs"), filter("filt"), deparser("dprs") {}
     ::Model::Elem parser;
     ::Model::Elem filter;
+    ::Model::Elem deparser;
 };
 
 // Keep this in sync with ebpf_model.p4

@@ -77,6 +77,7 @@ class EBPFDeparser : public EBPFControl {
         returnCode = cstring("returnCode");
     }
 
+    bool build() override;
     void emit(CodeBuilder* builder) override;
     // A "PreDeparser" is emitted just before a sequence of hdr.emit() functions.
     // It is useful in the case of resubmit or clone operation, as these operations
@@ -86,8 +87,9 @@ class EBPFDeparser : public EBPFControl {
     }
 
     virtual void emitDeparserExternCalls(CodeBuilder* builder) {
-        controlBlock->container->body->apply(*codeGen);
-        builder->newline();
+        // controlBlock->container->body->apply(*codeGen);
+        // builder->newline();
+        (void) builder;
     }
 
     void emitBufferAdjusts(CodeBuilder *builder) const;

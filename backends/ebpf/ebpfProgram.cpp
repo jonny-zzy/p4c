@@ -22,6 +22,7 @@ limitations under the License.
 #include "ebpfControl.h"
 #include "ebpfParser.h"
 #include "ebpfTable.h"
+#include "ebpfDeparser.h"
 #include "frontends/p4/coreLibrary.h"
 #include "frontends/common/options.h"
 
@@ -33,12 +34,13 @@ bool EBPFProgram::build() {
         ::warning(ErrorType::WARN_INVALID, "%1%: the main ebpf package should be called ebpfFilter"
                   "; are you using the wrong architecture?", pack->type->name);
 
-    if (pack->getConstructorParameters()->size() != 2) {
+    auto nparam = pack->getConstructorParameters()->size();
+    if (nparam != 2 && nparam != 3) {
         ::error(ErrorType::ERR_EXPECTED,
-                "Expected toplevel package %1% to have 2 parameters", pack->type);
+                "Expected toplevel package %1% to have 2 or 3 parameters", pack->type);
         return false;
     }
-
+    
     auto pb = pack->getParameterValue(model.filter.parser.name)
                       ->to<IR::ParserBlock>();
     BUG_CHECK(pb != nullptr, "No parser block found");
@@ -52,6 +54,15 @@ bool EBPFProgram::build() {
     BUG_CHECK(cb != nullptr, "No control block found");
     control = new EBPFControl(this, cb, parser->headers);
     success = control->build();
+    if (!success)
+        return success;
+
+
+    auto dpb = pack->getParameterValue(model.filter.deparser.name)
+                      ->to<IR::ControlBlock>();
+    BUG_CHECK(dpb != nullptr, "No deparser block found");
+    deparser = new EBPFDeparser(this, dpb, parser->headers);
+    success = deparser->build();
     if (!success)
         return success;
 
@@ -267,6 +278,10 @@ void EBPFProgram::emitPipeline(CodeBuilder* builder) {
     builder->blockEnd(true);
     builder->target->emitTraceMessage(builder, "Control: packet processing finished, pass=%d",
                                       1, control->accept->name.name.c_str());
-}
 
+    builder->append("/* deparser */");
+    builder->target->emitTraceMessage(builder, "Deparser: packet deparsing started");
+    deparser->emit(builder);
+    builder->target->emitTraceMessage(builder, "Deparser: packet deparsing finished");
+}
 }  // namespace EBPF
